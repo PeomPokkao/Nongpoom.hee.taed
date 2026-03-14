@@ -9,89 +9,74 @@ local currentJob = game.JobId
 local visited = {}
 local scannedServers = 0
 local autoHop = false
-local playerLimit = 8
+local autoRejoin = false
 
 -- GUI
 local gui = Instance.new("ScreenGui",game.CoreGui)
 
+-- OPEN UI BUTTON
+local openBtn = Instance.new("TextButton",gui)
+openBtn.Size = UDim2.new(0,40,0,40)
+openBtn.Position = UDim2.new(0,10,0.5,-20)
+openBtn.Text = "≡"
+openBtn.BackgroundColor3 = Color3.fromRGB(30,30,30)
+openBtn.TextColor3 = Color3.new(1,1,1)
+openBtn.Font = Enum.Font.GothamBold
+openBtn.TextSize = 18
+Instance.new("UICorner",openBtn)
+
+-- MAIN
 local main = Instance.new("Frame",gui)
 main.Size = UDim2.new(0,300,0,220)
 main.Position = UDim2.new(0.5,-150,0.5,-110)
 main.BackgroundColor3 = Color3.fromRGB(25,25,25)
 main.Active = true
 main.Draggable = true
-
-local corner = Instance.new("UICorner",main)
-corner.CornerRadius = UDim.new(0,10)
+Instance.new("UICorner",main)
 
 local stroke = Instance.new("UIStroke",main)
 stroke.Color = Color3.fromRGB(0,170,255)
 stroke.Thickness = 2
 
+-- TITLE
 local title = Instance.new("TextLabel",main)
 title.Size = UDim2.new(1,0,0,30)
-title.Text = "Server Hop"
 title.BackgroundTransparency = 1
+title.Text = "Server Hop"
 title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
 
--- scan counter
+-- SCAN INFO
 local scanInfo = Instance.new("TextLabel",main)
 scanInfo.Position = UDim2.new(0,0,0,40)
 scanInfo.Size = UDim2.new(1,0,0,25)
 scanInfo.BackgroundTransparency = 1
 scanInfo.TextColor3 = Color3.new(1,1,1)
+scanInfo.Font = Enum.Font.GothamBold
 scanInfo.Text = "Scanned : 0"
 
--- toggle
-local toggle = Instance.new("TextButton",main)
-toggle.Position = UDim2.new(0.1,0,0.7,0)
-toggle.Size = UDim2.new(0.8,0,0,35)
-toggle.Text = "Auto Hop : OFF"
-toggle.BackgroundColor3 = Color3.fromRGB(200,60,60)
+-- AUTO HOP TOGGLE
+local toggleHop = Instance.new("TextButton",main)
+toggleHop.Position = UDim2.new(0.1,0,0.55,0)
+toggleHop.Size = UDim2.new(0.8,0,0,35)
+toggleHop.Text = "Auto Hop : OFF"
+toggleHop.BackgroundColor3 = Color3.fromRGB(200,60,60)
+toggleHop.TextColor3 = Color3.new(1,1,1)
+toggleHop.Font = Enum.Font.GothamBold
+Instance.new("UICorner",toggleHop)
 
-Instance.new("UICorner",toggle)
+-- REJOIN TOGGLE
+local toggleRejoin = Instance.new("TextButton",main)
+toggleRejoin.Position = UDim2.new(0.1,0,0.75,0)
+toggleRejoin.Size = UDim2.new(0.8,0,0,35)
+toggleRejoin.Text = "Auto Rejoin : OFF"
+toggleRejoin.BackgroundColor3 = Color3.fromRGB(200,60,60)
+toggleRejoin.TextColor3 = Color3.new(1,1,1)
+toggleRejoin.Font = Enum.Font.GothamBold
+Instance.new("UICorner",toggleRejoin)
 
--- dropdown
-local dropdown = Instance.new("TextButton",main)
-dropdown.Position = UDim2.new(0.1,0,0.4,0)
-dropdown.Size = UDim2.new(0.8,0,0,30)
-dropdown.Text = "Players ≤ "..playerLimit
-dropdown.BackgroundColor3 = Color3.fromRGB(40,40,40)
-
-Instance.new("UICorner",dropdown)
-
-local dropFrame = Instance.new("Frame",main)
-dropFrame.Position = UDim2.new(0.1,0,0.55,0)
-dropFrame.Size = UDim2.new(0.8,0,0,120)
-dropFrame.Visible = false
-dropFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
-
-Instance.new("UICorner",dropFrame)
-
-for i=1,12 do
-
-local opt = Instance.new("TextButton",dropFrame)
-opt.Size = UDim2.new(1,0,0,20)
-opt.Position = UDim2.new(0,0,0,(i-1)*20)
-opt.Text = "≤ "..i
-opt.BackgroundTransparency = 1
-opt.TextColor3 = Color3.new(1,1,1)
-
-opt.MouseButton1Click:Connect(function()
-
-playerLimit = i
-dropdown.Text = "Players ≤ "..i
-dropFrame.Visible = false
-
-end)
-
-end
-
-dropdown.MouseButton1Click:Connect(function()
-dropFrame.Visible = not dropFrame.Visible
-end)
-
--- notification
+-- NOTIFICATION
 local function notify(text)
 
 local n = Instance.new("TextLabel",gui)
@@ -99,6 +84,7 @@ n.Size = UDim2.new(0,220,0,40)
 n.Position = UDim2.new(1,-230,0,20)
 n.BackgroundColor3 = Color3.fromRGB(20,20,20)
 n.TextColor3 = Color3.new(1,1,1)
+n.Font = Enum.Font.GothamBold
 n.Text = text
 
 Instance.new("UICorner",n)
@@ -109,23 +95,46 @@ end)
 
 end
 
-toggle.MouseButton1Click:Connect(function()
+-- TOGGLE HOP
+toggleHop.MouseButton1Click:Connect(function()
 
 autoHop = not autoHop
 
 if autoHop then
-toggle.Text = "Auto Hop : ON"
-toggle.BackgroundColor3 = Color3.fromRGB(60,200,100)
+toggleHop.Text = "Auto Hop : ON"
+toggleHop.BackgroundColor3 = Color3.fromRGB(60,200,100)
 notify("Auto Hop Enabled")
 else
-toggle.Text = "Auto Hop : OFF"
-toggle.BackgroundColor3 = Color3.fromRGB(200,60,60)
+toggleHop.Text = "Auto Hop : OFF"
+toggleHop.BackgroundColor3 = Color3.fromRGB(200,60,60)
 notify("Auto Hop Disabled")
 end
 
 end)
 
--- find server
+-- TOGGLE REJOIN
+toggleRejoin.MouseButton1Click:Connect(function()
+
+autoRejoin = not autoRejoin
+
+if autoRejoin then
+toggleRejoin.Text = "Auto Rejoin : ON"
+toggleRejoin.BackgroundColor3 = Color3.fromRGB(60,200,100)
+notify("Auto Rejoin Enabled")
+else
+toggleRejoin.Text = "Auto Rejoin : OFF"
+toggleRejoin.BackgroundColor3 = Color3.fromRGB(200,60,60)
+notify("Auto Rejoin Disabled")
+end
+
+end)
+
+-- OPEN / CLOSE UI
+openBtn.MouseButton1Click:Connect(function()
+main.Visible = not main.Visible
+end)
+
+-- FIND SERVER
 local function findServer()
 
 scannedServers = 0
@@ -146,7 +155,7 @@ for _,server in pairs(data.data) do
 scannedServers += 1
 scanInfo.Text = "Scanned : "..scannedServers
 
-if server.playing <= playerLimit
+if server.playing <= 8
 and server.id ~= currentJob
 and not visited[server.id] then
 
@@ -163,6 +172,7 @@ until cursor == ""
 
 end
 
+-- AUTO HOP LOOP
 task.spawn(function()
 
 while true do
@@ -182,6 +192,17 @@ end
 
 end
 
+end
+
+end)
+
+-- AUTO REJOIN
+Players.LocalPlayer.OnTeleport:Connect(function(state)
+
+if autoRejoin and state == Enum.TeleportState.Failed then
+notify("Teleport Failed - Rejoining")
+task.wait(2)
+TeleportService:Teleport(placeId,player)
 end
 
 end)
