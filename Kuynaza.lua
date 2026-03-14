@@ -1,11 +1,16 @@
 -- SERVICES
+local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
 local UIS = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
 
 -- GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "PoomEdit"
 gui.Parent = game.CoreGui
+gui.Name = "PoomEdit"
 
 -- OPEN BUTTON
 local open = Instance.new("TextButton",gui)
@@ -27,6 +32,19 @@ main.Active = true
 main.Draggable = true
 Instance.new("UICorner",main)
 
+-- UI GLOW
+local glow = Instance.new("UIStroke",main)
+glow.Thickness = 2
+
+task.spawn(function()
+	while true do
+		for h=0,1,0.01 do
+			glow.Color = Color3.fromHSV(h,1,1)
+			task.wait(.03)
+		end
+	end
+end)
+
 open.MouseButton1Click:Connect(function()
 	main.Visible = not main.Visible
 end)
@@ -39,19 +57,6 @@ UIS.InputBegan:Connect(function(i,g)
 	end
 end)
 
--- RAINBOW GLOW
-local stroke = Instance.new("UIStroke",main)
-stroke.Thickness = 2
-
-task.spawn(function()
-	while true do
-		for h=0,1,0.01 do
-			stroke.Color = Color3.fromHSV(h,1,1)
-			task.wait(.03)
-		end
-	end
-end)
-
 -- TITLE
 local title = Instance.new("TextLabel",main)
 title.Size = UDim2.new(1,0,0,40)
@@ -61,91 +66,38 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 24
 title.TextColor3 = Color3.new(1,1,1)
 
--- LINE
-local line = Instance.new("Frame",main)
-line.Size = UDim2.new(1,0,0,2)
-line.Position = UDim2.new(0,0,0,40)
-line.BackgroundColor3 = Color3.fromRGB(70,70,70)
+-- NOTIFICATION
+local function notify(text)
 
--- TAB BAR
-local tabBar = Instance.new("Frame",main)
-tabBar.Size = UDim2.new(1,0,0,30)
-tabBar.Position = UDim2.new(0,0,0,42)
-tabBar.BackgroundTransparency = 1
+	local n = Instance.new("TextLabel",gui)
+	n.Size = UDim2.new(0,260,0,40)
+	n.Position = UDim2.new(1,-270,1,-80)
+	n.BackgroundColor3 = Color3.fromRGB(35,35,35)
+	n.Text = text
+	n.TextColor3 = Color3.new(1,1,1)
+	n.Font = Enum.Font.GothamBold
+	n.TextSize = 16
+	Instance.new("UICorner",n)
 
-local tabLayout = Instance.new("UIListLayout",tabBar)
-tabLayout.FillDirection = Enum.FillDirection.Horizontal
-tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	TweenService:Create(n,TweenInfo.new(.3),
+	{Position = UDim2.new(1,-270,1,-130)}):Play()
 
--- PAGE HOLDER
-local pages = Instance.new("Frame",main)
-pages.Size = UDim2.new(1,0,1,-74)
-pages.Position = UDim2.new(0,0,0,74)
-pages.BackgroundTransparency = 1
+	task.wait(4)
 
-local pageList = {}
+	TweenService:Create(n,TweenInfo.new(.3),
+	{Position = UDim2.new(1,-270,1,-80)}):Play()
 
-local function createTab(name,last)
-
-	local tab = Instance.new("TextButton",tabBar)
-	tab.Size = UDim2.new(0,80,1,0)
-	tab.BackgroundTransparency = 1
-	tab.Text = name
-	tab.Font = Enum.Font.GothamBold
-	tab.TextColor3 = Color3.fromRGB(180,180,180)
-
-	local highlight = Instance.new("Frame",tab)
-	highlight.Size = UDim2.new(1,0,0,2)
-	highlight.Position = UDim2.new(0,0,1,-2)
-	highlight.BackgroundColor3 = Color3.fromRGB(0,170,255)
-	highlight.Visible = false
-
-	local page = Instance.new("Frame",pages)
-	page.Size = UDim2.new(1,0,1,0)
-	page.BackgroundTransparency = 1
-	page.Visible = false
-
-	pageList[name] = {page,highlight,tab}
-
-	tab.MouseButton1Click:Connect(function()
-
-		for _,v in pairs(pageList) do
-			v[1].Visible = false
-			v[2].Visible = false
-			v[3].TextColor3 = Color3.fromRGB(180,180,180)
-		end
-
-		page.Visible = true
-		highlight.Visible = true
-		tab.TextColor3 = Color3.new(1,1,1)
-
-	end)
-
-	if not last then
-		local sep = Instance.new("TextLabel",tabBar)
-		sep.Size = UDim2.new(0,10,1,0)
-		sep.Text = "|"
-		sep.BackgroundTransparency = 1
-		sep.TextColor3 = Color3.fromRGB(120,120,120)
-	end
-
-	return page
+	task.wait(.3)
+	n:Destroy()
 
 end
 
--- CREATE TABS
-local misc = createTab("Misc")
-createTab("Farm")
-createTab("Travel")
-createTab("Visual")
-createTab("Settings",true)
-
--- DEFAULT TAB
-pageList["Misc"][1].Visible = true
-pageList["Misc"][2].Visible = true
-pageList["Misc"][3].TextColor3 = Color3.new(1,1,1)
-
 -- SPLIT
+local misc = Instance.new("Frame",main)
+misc.Size = UDim2.new(1,0,1,-50)
+misc.Position = UDim2.new(0,0,0,50)
+misc.BackgroundTransparency = 1
+
 local left = Instance.new("Frame",misc)
 left.Size = UDim2.new(.5,0,1,0)
 left.BackgroundTransparency = 1
@@ -155,24 +107,64 @@ right.Size = UDim2.new(.5,0,1,0)
 right.Position = UDim2.new(.5,0,0,0)
 right.BackgroundTransparency = 1
 
-local divider = Instance.new("Frame",misc)
-divider.Size = UDim2.new(0,2,1,0)
-divider.Position = UDim2.new(.5,-1,0,0)
-divider.BackgroundColor3 = Color3.fromRGB(70,70,70)
-
--- LEFT LAYOUT
 local leftLayout = Instance.new("UIListLayout",left)
-leftLayout.Padding = UDim.new(0,10)
+leftLayout.Padding = UDim.new(0,14)
+
+local rightLayout = Instance.new("UIListLayout",right)
+rightLayout.Padding = UDim.new(0,14)
+
+-- SERVER HOP BUTTON
+local hop = Instance.new("TextButton",left)
+hop.Size = UDim2.new(0,220,0,40)
+hop.Text = "Server Hop"
+hop.Font = Enum.Font.GothamBold
+hop.TextColor3 = Color3.new(1,1,1)
+hop.BackgroundColor3 = Color3.fromRGB(40,40,40)
+Instance.new("UICorner",hop)
+
+hop.MouseButton1Click:Connect(function()
+
+	notify("กำลังย้ายเซิร์ฟ...")
+
+	local place = game.PlaceId
+	local servers = {}
+
+	local req = game:HttpGet(
+	"https://games.roblox.com/v1/games/"..
+	place.."/servers/Public?sortOrder=Asc&limit=100"
+	)
+
+	local data = HttpService:JSONDecode(req)
+
+	for _,v in pairs(data.data) do
+		if v.playing < v.maxPlayers then
+			table.insert(servers,v.id)
+		end
+	end
+
+	if #servers > 0 then
+		TeleportService:TeleportToPlaceInstance(
+		place,
+		servers[math.random(1,#servers)],
+		player)
+	end
+
+end)
 
 -- TOGGLE
-local function createToggle(parent,text)
+local autoRejoin = false
+
+local function createToggle(parent,text,callback)
+
+	local state = false
 
 	local holder = Instance.new("Frame",parent)
-	holder.Size = UDim2.new(0,200,0,36)
+	holder.Size = UDim2.new(0,220,0,40)
 	holder.BackgroundTransparency = 1
 
 	local label = Instance.new("TextLabel",holder)
 	label.Size = UDim2.new(.7,0,1,0)
+	label.Position = UDim2.new(0,8,0,0)
 	label.BackgroundTransparency = 1
 	label.Text = text
 	label.Font = Enum.Font.GothamBold
@@ -191,76 +183,55 @@ local function createToggle(parent,text)
 	knob.BackgroundColor3 = Color3.new(1,1,1)
 	Instance.new("UICorner",knob)
 
-end
+	holder.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 then
 
-createToggle(left,"Server Hop")
-createToggle(left,"Auto Rejoin")
+			state = not state
 
--- RIGHT LAYOUT
-local rightLayout = Instance.new("UIListLayout",right)
-rightLayout.Padding = UDim.new(0,10)
+			if state then
 
--- DROPDOWN
-local drop = Instance.new("TextButton",right)
-drop.Size = UDim2.new(0,200,0,40)
-drop.Text = "Select Island"
-drop.Font = Enum.Font.GothamBold
-drop.TextColor3 = Color3.new(1,1,1)
-drop.BackgroundColor3 = Color3.fromRGB(40,40,40)
-Instance.new("UICorner",drop)
+				TweenService:Create(knob,TweenInfo.new(.2),
+				{Position = UDim2.new(1,-20,0.5,-9)}):Play()
 
-local dropFrame = Instance.new("ScrollingFrame",right)
-dropFrame.Size = UDim2.new(0,200,0,0)
-dropFrame.Visible = false
-dropFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
-dropFrame.ScrollBarThickness = 5
-Instance.new("UICorner",dropFrame)
+				TweenService:Create(toggle,TweenInfo.new(.2),
+				{BackgroundColor3 = Color3.fromRGB(0,170,255)}):Play()
 
-local layout = Instance.new("UIListLayout",dropFrame)
+				notify(text.." ON")
 
-local islands = {
-"Port Town","Hydra Island","Great Tree","Floating Turtle",
-"Haunted Castle","Sea of Treats","Castle on the Sea",
-"Tiki Outpost","Mirage Island","Chocolate Island",
-"Ice Cream Island","Peanut Island","Candy Island",
-"Cake Island","Loaf Island","Mansion","Leviathan Island"
-}
+			else
 
-for _,v in pairs(islands) do
+				TweenService:Create(knob,TweenInfo.new(.2),
+				{Position = UDim2.new(0,2,0.5,-9)}):Play()
 
-	local b = Instance.new("TextButton",dropFrame)
-	b.Size = UDim2.new(1,0,0,28)
-	b.Text = v
-	b.BackgroundTransparency = 1
-	b.Font = Enum.Font.GothamBold
-	b.TextColor3 = Color3.new(1,1,1)
+				TweenService:Create(toggle,TweenInfo.new(.2),
+				{BackgroundColor3 = Color3.fromRGB(90,90,90)}):Play()
 
-	b.MouseButton1Click:Connect(function()
-		drop.Text = v
+				notify(text.." OFF")
+
+			end
+
+			callback(state)
+
+		end
 	end)
 
 end
 
-dropFrame.CanvasSize = UDim2.new(0,0,0,#islands*30)
+-- AUTO REJOIN
+createToggle(left,"Auto Rejoin",function(v)
+	autoRejoin = v
+end)
 
-drop.MouseButton1Click:Connect(function()
+player.OnTeleport:Connect(function(state)
 
-	if dropFrame.Visible == false then
+	if autoRejoin and state == Enum.TeleportState.Failed then
 
-		dropFrame.Visible = true
-		TweenService:Create(dropFrame,TweenInfo.new(.25),
-		{Size = UDim2.new(0,200,0,150)}):Play()
+		task.wait(2)
 
-	else
-
-		TweenService:Create(dropFrame,TweenInfo.new(.25),
-		{Size = UDim2.new(0,200,0,0)}):Play()
-
-		task.wait(.25)
-		dropFrame.Visible = false
+		TeleportService:Teleport(
+		game.PlaceId,
+		player)
 
 	end
 
 end)
-
-createToggle(right,"Start To Island")
