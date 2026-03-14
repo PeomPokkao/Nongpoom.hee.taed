@@ -1,11 +1,11 @@
 -- SERVICES
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
-local Player = game.Players.LocalPlayer
 
 -- GUI
-local gui = Instance.new("ScreenGui",game.CoreGui)
-gui.Name = "PoomEditHub"
+local gui = Instance.new("ScreenGui")
+gui.Name = "PoomEdit"
+gui.Parent = game.CoreGui
 
 -- OPEN BUTTON
 local open = Instance.new("TextButton",gui)
@@ -18,7 +18,7 @@ open.TextColor3 = Color3.new(1,1,1)
 open.BackgroundColor3 = Color3.fromRGB(35,35,35)
 Instance.new("UICorner",open)
 
--- MAIN WINDOW
+-- MAIN
 local main = Instance.new("Frame",gui)
 main.Size = UDim2.new(0,520,0,340)
 main.Position = UDim2.new(.5,-260,.5,-170)
@@ -39,7 +39,7 @@ UIS.InputBegan:Connect(function(i,g)
 	end
 end)
 
--- NEON GLOW
+-- RAINBOW GLOW
 local stroke = Instance.new("UIStroke",main)
 stroke.Thickness = 2
 
@@ -84,7 +84,6 @@ pages.Position = UDim2.new(0,0,0,74)
 pages.BackgroundTransparency = 1
 
 local pageList = {}
-local tabButtons = {}
 
 local function createTab(name,last)
 
@@ -93,7 +92,7 @@ local function createTab(name,last)
 	tab.BackgroundTransparency = 1
 	tab.Text = name
 	tab.Font = Enum.Font.GothamBold
-	tab.TextColor3 = Color3.fromRGB(170,170,170)
+	tab.TextColor3 = Color3.fromRGB(180,180,180)
 
 	local highlight = Instance.new("Frame",tab)
 	highlight.Size = UDim2.new(1,0,0,2)
@@ -103,56 +102,48 @@ local function createTab(name,last)
 
 	local page = Instance.new("Frame",pages)
 	page.Size = UDim2.new(1,0,1,0)
-	page.Position = UDim2.new(1,0,0,0)
-	page.Visible = false
 	page.BackgroundTransparency = 1
+	page.Visible = false
 
-	pageList[name] = page
-	tabButtons[name] = {tab,highlight}
+	pageList[name] = {page,highlight,tab}
 
 	tab.MouseButton1Click:Connect(function()
 
-		for n,p in pairs(pageList) do
-			p.Visible = false
-			tabButtons[n][2].Visible = false
-			tabButtons[n][1].TextColor3 = Color3.fromRGB(170,170,170)
+		for _,v in pairs(pageList) do
+			v[1].Visible = false
+			v[2].Visible = false
+			v[3].TextColor3 = Color3.fromRGB(180,180,180)
 		end
 
 		page.Visible = true
-		tabButtons[name][2].Visible = true
+		highlight.Visible = true
 		tab.TextColor3 = Color3.new(1,1,1)
-
-		page.Position = UDim2.new(1,0,0,0)
-
-		TweenService:Create(page,
-			TweenInfo.new(.25,Enum.EasingStyle.Quad),
-			{Position = UDim2.new(0,0,0,0)}
-		):Play()
 
 	end)
 
 	if not last then
 		local sep = Instance.new("TextLabel",tabBar)
 		sep.Size = UDim2.new(0,10,1,0)
-		sep.BackgroundTransparency = 1
 		sep.Text = "|"
-		sep.Font = Enum.Font.GothamBold
+		sep.BackgroundTransparency = 1
 		sep.TextColor3 = Color3.fromRGB(120,120,120)
 	end
 
 	return page
+
 end
 
--- TABS
+-- CREATE TABS
 local misc = createTab("Misc")
 createTab("Farm")
 createTab("Travel")
 createTab("Visual")
 createTab("Settings",true)
 
-misc.Visible = true
-tabButtons["Misc"][2].Visible = true
-tabButtons["Misc"][1].TextColor3 = Color3.new(1,1,1)
+-- DEFAULT TAB
+pageList["Misc"][1].Visible = true
+pageList["Misc"][2].Visible = true
+pageList["Misc"][3].TextColor3 = Color3.new(1,1,1)
 
 -- SPLIT
 local left = Instance.new("Frame",misc)
@@ -168,6 +159,10 @@ local divider = Instance.new("Frame",misc)
 divider.Size = UDim2.new(0,2,1,0)
 divider.Position = UDim2.new(.5,-1,0,0)
 divider.BackgroundColor3 = Color3.fromRGB(70,70,70)
+
+-- LEFT LAYOUT
+local leftLayout = Instance.new("UIListLayout",left)
+leftLayout.Padding = UDim.new(0,10)
 
 -- TOGGLE
 local function createToggle(parent,text)
@@ -194,29 +189,16 @@ local function createToggle(parent,text)
 	knob.Size = UDim2.new(0,18,0,18)
 	knob.Position = UDim2.new(0,2,0.5,-9)
 	knob.BackgroundColor3 = Color3.new(1,1,1)
-	Instance.new("UICorner",knob).CornerRadius = UDim.new(1,0)
-
-	local state = false
-
-	toggle.InputBegan:Connect(function()
-
-		state = not state
-
-		local pos = state and UDim2.new(1,-20,0.5,-9) or UDim2.new(0,2,0.5,-9)
-		local color = state and Color3.fromRGB(0,170,0) or Color3.fromRGB(90,90,90)
-
-		TweenService:Create(knob,TweenInfo.new(.2),{Position=pos}):Play()
-		TweenService:Create(toggle,TweenInfo.new(.2),{BackgroundColor3=color}):Play()
-
-	end)
+	Instance.new("UICorner",knob)
 
 end
 
 createToggle(left,"Server Hop")
 createToggle(left,"Auto Rejoin")
 
-local layoutRight = Instance.new("UIListLayout",right)
-layoutRight.Padding = UDim.new(0,10)
+-- RIGHT LAYOUT
+local rightLayout = Instance.new("UIListLayout",right)
+rightLayout.Padding = UDim.new(0,10)
 
 -- DROPDOWN
 local drop = Instance.new("TextButton",right)
@@ -229,10 +211,9 @@ Instance.new("UICorner",drop)
 
 local dropFrame = Instance.new("ScrollingFrame",right)
 dropFrame.Size = UDim2.new(0,200,0,0)
+dropFrame.Visible = false
 dropFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
 dropFrame.ScrollBarThickness = 5
-dropFrame.Visible = false
-dropFrame.ScrollBarImageColor3 = Color3.fromRGB(0,170,255)
 Instance.new("UICorner",dropFrame)
 
 local layout = Instance.new("UIListLayout",dropFrame)
@@ -267,20 +248,13 @@ drop.MouseButton1Click:Connect(function()
 	if dropFrame.Visible == false then
 
 		dropFrame.Visible = true
-
-		TweenService:Create(
-			dropFrame,
-			TweenInfo.new(.25),
-			{Size = UDim2.new(0,200,0,150)}
-		):Play()
+		TweenService:Create(dropFrame,TweenInfo.new(.25),
+		{Size = UDim2.new(0,200,0,150)}):Play()
 
 	else
 
-		TweenService:Create(
-			dropFrame,
-			TweenInfo.new(.25),
-			{Size = UDim2.new(0,200,0,0)}
-		):Play()
+		TweenService:Create(dropFrame,TweenInfo.new(.25),
+		{Size = UDim2.new(0,200,0,0)}):Play()
 
 		task.wait(.25)
 		dropFrame.Visible = false
