@@ -1,8 +1,7 @@
 -- SERVICES
-local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
-
-local player = Players.LocalPlayer
+local UIS = game:GetService("UserInputService")
+local Player = game.Players.LocalPlayer
 
 -- GUI
 local gui = Instance.new("ScreenGui",game.CoreGui)
@@ -14,12 +13,12 @@ open.Size = UDim2.new(0,40,0,40)
 open.Position = UDim2.new(0,10,0.5,-20)
 open.Text = "≡"
 open.Font = Enum.Font.GothamBold
-open.TextColor3 = Color3.new(1,1,1)
 open.TextSize = 22
+open.TextColor3 = Color3.new(1,1,1)
 open.BackgroundColor3 = Color3.fromRGB(35,35,35)
 Instance.new("UICorner",open)
 
--- MAIN
+-- MAIN WINDOW
 local main = Instance.new("Frame",gui)
 main.Size = UDim2.new(0,520,0,340)
 main.Position = UDim2.new(.5,-260,.5,-170)
@@ -30,6 +29,27 @@ Instance.new("UICorner",main)
 
 open.MouseButton1Click:Connect(function()
 	main.Visible = not main.Visible
+end)
+
+-- HOTKEY
+UIS.InputBegan:Connect(function(i,g)
+	if g then return end
+	if i.KeyCode == Enum.KeyCode.RightControl then
+		main.Visible = not main.Visible
+	end
+end)
+
+-- NEON GLOW
+local stroke = Instance.new("UIStroke",main)
+stroke.Thickness = 2
+
+task.spawn(function()
+	while true do
+		for h=0,1,0.01 do
+			stroke.Color = Color3.fromHSV(h,1,1)
+			task.wait(.03)
+		end
+	end
 end)
 
 -- TITLE
@@ -45,7 +65,7 @@ title.TextColor3 = Color3.new(1,1,1)
 local line = Instance.new("Frame",main)
 line.Size = UDim2.new(1,0,0,2)
 line.Position = UDim2.new(0,0,0,40)
-line.BackgroundColor3 = Color3.fromRGB(80,80,80)
+line.BackgroundColor3 = Color3.fromRGB(70,70,70)
 
 -- TAB BAR
 local tabBar = Instance.new("Frame",main)
@@ -56,7 +76,6 @@ tabBar.BackgroundTransparency = 1
 local tabLayout = Instance.new("UIListLayout",tabBar)
 tabLayout.FillDirection = Enum.FillDirection.Horizontal
 tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-tabLayout.Padding = UDim.new(0,12)
 
 -- PAGE HOLDER
 local pages = Instance.new("Frame",main)
@@ -65,16 +84,22 @@ pages.Position = UDim2.new(0,0,0,74)
 pages.BackgroundTransparency = 1
 
 local pageList = {}
+local tabButtons = {}
 
--- TAB FUNCTION
-local function createTab(name)
+local function createTab(name,last)
 
 	local tab = Instance.new("TextButton",tabBar)
 	tab.Size = UDim2.new(0,80,1,0)
 	tab.BackgroundTransparency = 1
 	tab.Text = name
 	tab.Font = Enum.Font.GothamBold
-	tab.TextColor3 = Color3.new(1,1,1)
+	tab.TextColor3 = Color3.fromRGB(170,170,170)
+
+	local highlight = Instance.new("Frame",tab)
+	highlight.Size = UDim2.new(1,0,0,2)
+	highlight.Position = UDim2.new(0,0,1,-2)
+	highlight.BackgroundColor3 = Color3.fromRGB(0,170,255)
+	highlight.Visible = false
 
 	local page = Instance.new("Frame",pages)
 	page.Size = UDim2.new(1,0,1,0)
@@ -83,62 +108,76 @@ local function createTab(name)
 	page.BackgroundTransparency = 1
 
 	pageList[name] = page
+	tabButtons[name] = {tab,highlight}
 
 	tab.MouseButton1Click:Connect(function()
 
-		for _,p in pairs(pageList) do
+		for n,p in pairs(pageList) do
 			p.Visible = false
+			tabButtons[n][2].Visible = false
+			tabButtons[n][1].TextColor3 = Color3.fromRGB(170,170,170)
 		end
 
 		page.Visible = true
+		tabButtons[name][2].Visible = true
+		tab.TextColor3 = Color3.new(1,1,1)
+
 		page.Position = UDim2.new(1,0,0,0)
 
-		TweenService:Create(
-			page,
+		TweenService:Create(page,
 			TweenInfo.new(.25,Enum.EasingStyle.Quad),
 			{Position = UDim2.new(0,0,0,0)}
 		):Play()
 
 	end)
 
-	return page
+	if not last then
+		local sep = Instance.new("TextLabel",tabBar)
+		sep.Size = UDim2.new(0,10,1,0)
+		sep.BackgroundTransparency = 1
+		sep.Text = "|"
+		sep.Font = Enum.Font.GothamBold
+		sep.TextColor3 = Color3.fromRGB(120,120,120)
+	end
 
+	return page
 end
 
--- CREATE TABS
-local miscPage = createTab("Misc")
-local farmPage = createTab("Farm")
-local travelPage = createTab("Travel")
-local visualPage = createTab("Visual")
-local settingsPage = createTab("Settings")
+-- TABS
+local misc = createTab("Misc")
+createTab("Farm")
+createTab("Travel")
+createTab("Visual")
+createTab("Settings",true)
 
-miscPage.Visible = true
+misc.Visible = true
+tabButtons["Misc"][2].Visible = true
+tabButtons["Misc"][1].TextColor3 = Color3.new(1,1,1)
 
--- SPLIT PANELS
-local left = Instance.new("Frame",miscPage)
+-- SPLIT
+local left = Instance.new("Frame",misc)
 left.Size = UDim2.new(.5,0,1,0)
 left.BackgroundTransparency = 1
 
-local right = Instance.new("Frame",miscPage)
+local right = Instance.new("Frame",misc)
 right.Size = UDim2.new(.5,0,1,0)
 right.Position = UDim2.new(.5,0,0,0)
 right.BackgroundTransparency = 1
 
-local divider = Instance.new("Frame",miscPage)
+local divider = Instance.new("Frame",misc)
 divider.Size = UDim2.new(0,2,1,0)
 divider.Position = UDim2.new(.5,-1,0,0)
 divider.BackgroundColor3 = Color3.fromRGB(70,70,70)
 
--- TOGGLE FUNCTION
-local function createToggle(parent,text,pos)
+-- TOGGLE
+local function createToggle(parent,text)
 
 	local holder = Instance.new("Frame",parent)
 	holder.Size = UDim2.new(0,200,0,36)
-	holder.Position = pos
 	holder.BackgroundTransparency = 1
 
 	local label = Instance.new("TextLabel",holder)
-	label.Size = UDim2.new(0.7,0,1,0)
+	label.Size = UDim2.new(.7,0,1,0)
 	label.BackgroundTransparency = 1
 	label.Text = text
 	label.Font = Enum.Font.GothamBold
@@ -146,14 +185,14 @@ local function createToggle(parent,text,pos)
 	label.TextXAlignment = Enum.TextXAlignment.Left
 
 	local toggle = Instance.new("Frame",holder)
-	toggle.Size = UDim2.new(0,40,0,20)
-	toggle.Position = UDim2.new(1,-40,0.5,-10)
-	toggle.BackgroundColor3 = Color3.fromRGB(80,80,80)
+	toggle.Size = UDim2.new(0,42,0,22)
+	toggle.Position = UDim2.new(1,-42,0.5,-11)
+	toggle.BackgroundColor3 = Color3.fromRGB(90,90,90)
 	Instance.new("UICorner",toggle).CornerRadius = UDim.new(1,0)
 
 	local knob = Instance.new("Frame",toggle)
 	knob.Size = UDim2.new(0,18,0,18)
-	knob.Position = UDim2.new(0,1,0.5,-9)
+	knob.Position = UDim2.new(0,2,0.5,-9)
 	knob.BackgroundColor3 = Color3.new(1,1,1)
 	Instance.new("UICorner",knob).CornerRadius = UDim.new(1,0)
 
@@ -163,86 +202,60 @@ local function createToggle(parent,text,pos)
 
 		state = not state
 
-		local goal = state and UDim2.new(1,-19,0.5,-9) or UDim2.new(0,1,0.5,-9)
-		local color = state and Color3.fromRGB(0,170,0) or Color3.fromRGB(80,80,80)
+		local pos = state and UDim2.new(1,-20,0.5,-9) or UDim2.new(0,2,0.5,-9)
+		local color = state and Color3.fromRGB(0,170,0) or Color3.fromRGB(90,90,90)
 
-		TweenService:Create(knob,TweenInfo.new(.2),{Position = goal}):Play()
-		TweenService:Create(toggle,TweenInfo.new(.2),{BackgroundColor3 = color}):Play()
+		TweenService:Create(knob,TweenInfo.new(.2),{Position=pos}):Play()
+		TweenService:Create(toggle,TweenInfo.new(.2),{BackgroundColor3=color}):Play()
 
 	end)
 
 end
 
--- LEFT SIDE
-createToggle(left,"Server Hop",UDim2.new(0,20,0,30))
-createToggle(left,"Auto Rejoin",UDim2.new(0,20,0,80))
+createToggle(left,"Server Hop")
+createToggle(left,"Auto Rejoin")
 
-local scan = Instance.new("TextLabel",left)
-scan.Size = UDim2.new(0,200,0,40)
-scan.Position = UDim2.new(0,20,0,140)
-scan.Text = "Server Scan : 0"
-scan.Font = Enum.Font.GothamBold
-scan.TextSize = 18
-scan.TextColor3 = Color3.new(1,1,1)
-scan.BackgroundTransparency = 1
+local layoutRight = Instance.new("UIListLayout",right)
+layoutRight.Padding = UDim.new(0,10)
 
--- ISLAND LIST
-local islands = {
-
-"Port Town",
-"Hydra Island",
-"Great Tree",
-"Floating Turtle",
-"Haunted Castle",
-"Sea of Treats",
-"Castle on the Sea",
-"Tiki Outpost",
-"Mirage Island",
-"Chocolate Island",
-"Ice Cream Island",
-"Peanut Island",
-"Candy Island",
-"Cake Island",
-"Loaf Island",
-"Mansion",
-"Leviathan Island"
-
-}
-
--- DROPDOWN BUTTON
+-- DROPDOWN
 local drop = Instance.new("TextButton",right)
 drop.Size = UDim2.new(0,200,0,40)
-drop.Position = UDim2.new(0,20,0,30)
 drop.Text = "Select Island"
 drop.Font = Enum.Font.GothamBold
 drop.TextColor3 = Color3.new(1,1,1)
 drop.BackgroundColor3 = Color3.fromRGB(40,40,40)
 Instance.new("UICorner",drop)
 
--- SCROLL DROPDOWN
 local dropFrame = Instance.new("ScrollingFrame",right)
-dropFrame.Size = UDim2.new(0,200,0,150)
-dropFrame.Position = UDim2.new(0,20,0,75)
+dropFrame.Size = UDim2.new(0,200,0,0)
 dropFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
-dropFrame.ScrollBarThickness = 4
+dropFrame.ScrollBarThickness = 5
 dropFrame.Visible = false
+dropFrame.ScrollBarImageColor3 = Color3.fromRGB(0,170,255)
 Instance.new("UICorner",dropFrame)
 
 local layout = Instance.new("UIListLayout",dropFrame)
-layout.Padding = UDim.new(0,2)
 
-for _,name in pairs(islands) do
+local islands = {
+"Port Town","Hydra Island","Great Tree","Floating Turtle",
+"Haunted Castle","Sea of Treats","Castle on the Sea",
+"Tiki Outpost","Mirage Island","Chocolate Island",
+"Ice Cream Island","Peanut Island","Candy Island",
+"Cake Island","Loaf Island","Mansion","Leviathan Island"
+}
 
-	local option = Instance.new("TextButton",dropFrame)
-	option.Size = UDim2.new(1,0,0,28)
-	option.Text = name
-	option.Font = Enum.Font.GothamBold
-	option.TextColor3 = Color3.new(1,1,1)
-	option.BackgroundTransparency = 1
+for _,v in pairs(islands) do
 
-	option.MouseButton1Click:Connect(function()
-		drop.Text = name
-		dropFrame.Visible = false
+	local b = Instance.new("TextButton",dropFrame)
+	b.Size = UDim2.new(1,0,0,28)
+	b.Text = v
+	b.BackgroundTransparency = 1
+	b.Font = Enum.Font.GothamBold
+	b.TextColor3 = Color3.new(1,1,1)
+
+	b.MouseButton1Click:Connect(function()
+		drop.Text = v
 	end)
 
 end
@@ -250,8 +263,30 @@ end
 dropFrame.CanvasSize = UDim2.new(0,0,0,#islands*30)
 
 drop.MouseButton1Click:Connect(function()
-	dropFrame.Visible = not dropFrame.Visible
+
+	if dropFrame.Visible == false then
+
+		dropFrame.Visible = true
+
+		TweenService:Create(
+			dropFrame,
+			TweenInfo.new(.25),
+			{Size = UDim2.new(0,200,0,150)}
+		):Play()
+
+	else
+
+		TweenService:Create(
+			dropFrame,
+			TweenInfo.new(.25),
+			{Size = UDim2.new(0,200,0,0)}
+		):Play()
+
+		task.wait(.25)
+		dropFrame.Visible = false
+
+	end
+
 end)
 
--- START TO ISLAND
-createToggle(right,"Start To Island",UDim2.new(0,20,0,240))
+createToggle(right,"Start To Island")
