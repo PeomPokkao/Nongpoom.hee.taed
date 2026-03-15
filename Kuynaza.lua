@@ -1,104 +1,193 @@
-function Dropdown(tab,name,list,callback)
+-- SERVICES
+local TweenService = game:GetService("TweenService")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
 
-local frame = Instance.new("Frame",tab)
-frame.Size=UDim2.new(1,-10,0,26)
-frame.BackgroundColor3=Color3.fromRGB(40,40,40)
+local PlaceID = game.PlaceId
 
-Instance.new("UICorner",frame).CornerRadius = UDim.new(0,10)
+-- GUI
+local ScreenGui = Instance.new("ScreenGui",game.CoreGui)
 
-local button = Instance.new("TextButton",frame)
-button.Size=UDim2.new(1,0,1,0)
-button.Text=name
-button.BackgroundTransparency=1
-button.TextColor3=Color3.new(1,1,1)
+-- THEME
+local Theme = {
+	Main = Color3.fromRGB(25,25,25),
+	Button = Color3.fromRGB(35,35,35),
+	Accent = Color3.fromRGB(0,170,255),
+	Text = Color3.fromRGB(255,255,255)
+}
 
-local container = Instance.new("Frame",tab)
-container.Size=UDim2.new(1,-10,0,0)
-container.BackgroundTransparency=1
-container.ClipsDescendants=true
+-- FLOAT ICON
+local Float = Instance.new("ImageButton",ScreenGui)
+Float.Size = UDim2.new(0,38,0,38)
+Float.Position = UDim2.new(0,20,0.5,-19)
+Float.BackgroundColor3 = Theme.Button
+Float.Image = "rbxassetid://7733960981"
+Instance.new("UICorner",Float).CornerRadius = UDim.new(1,0)
 
-local layout=Instance.new("UIListLayout",container)
-layout.Padding=UDim.new(0,4)
+-- MAIN
+local Main = Instance.new("Frame",ScreenGui)
+Main.Size = UDim2.new(0,270,0,140)
+Main.Position = UDim2.new(0.5,-135,0.5,-70)
+Main.BackgroundColor3 = Theme.Main
+Main.BackgroundTransparency = 0.15
+Main.Visible = false
+Instance.new("UICorner",Main)
 
-local opened=false
-local options={}
+local Stroke = Instance.new("UIStroke",Main)
+Stroke.Color = Theme.Accent
 
-------------------------------------------------
--- CREATE OPTION
-------------------------------------------------
-
-local function createOption(v)
-
-local opt = Instance.new("TextButton",container)
-opt.Size=UDim2.new(1,0,0,24)
-opt.Text=v
-opt.BackgroundColor3=Color3.fromRGB(50,50,50)
-opt.TextColor3=Color3.new(1,1,1)
-
-Instance.new("UICorner",opt).CornerRadius = UDim.new(0,8)
-
-opt.MouseButton1Click:Connect(function()
-
-button.Text = v
-
-if callback then
-callback(v)
-end
-
-container.Size = UDim2.new(1,-10,0,0)
-opened=false
-
+Float.MouseButton1Click:Connect(function()
+	Main.Visible = not Main.Visible
 end)
 
-table.insert(options,opt)
+-- CONTENT
+local Content = Instance.new("Frame",Main)
+Content.Size = UDim2.new(1,0,1,0)
+Content.BackgroundTransparency = 1
+
+local Layout = Instance.new("UIListLayout",Content)
+Layout.Padding = UDim.new(0,6)
+
+-- BUTTON
+function Button(text,callback)
+
+	local Btn = Instance.new("TextButton",Content)
+	Btn.Size = UDim2.new(1,-16,0,28)
+	Btn.Position = UDim2.new(0,8,0,0)
+	Btn.Text = text
+	Btn.BackgroundColor3 = Theme.Button
+	Btn.TextColor3 = Theme.Text
+	Instance.new("UICorner",Btn)
+
+	Btn.MouseButton1Click:Connect(callback)
 
 end
 
-------------------------------------------------
--- INITIAL LIST
-------------------------------------------------
+-- TOGGLE
+function Toggle(text,callback)
 
-for _,v in pairs(list) do
-createOption(v)
+	local T = Instance.new("TextButton",Content)
+	T.Size = UDim2.new(1,-16,0,28)
+	T.Text = text.." : OFF"
+	T.BackgroundColor3 = Theme.Button
+	T.TextColor3 = Theme.Text
+	Instance.new("UICorner",T)
+
+	local state = false
+
+	T.MouseButton1Click:Connect(function()
+
+		state = not state
+		T.Text = text.." : "..(state and "ON" or "OFF")
+
+		callback(state)
+
+	end)
+
 end
 
-------------------------------------------------
--- OPEN CLOSE
-------------------------------------------------
+-- NOTIFICATION HOLDER
+local Holder = Instance.new("Frame",ScreenGui)
+Holder.Position = UDim2.new(1,-260,0,80)
+Holder.Size = UDim2.new(0,240,0,200)
+Holder.BackgroundTransparency = 1
 
-button.MouseButton1Click:Connect(function()
+local Layout2 = Instance.new("UIListLayout",Holder)
+Layout2.Padding = UDim.new(0,6)
 
-opened = not opened
+-- CREATE NOTIFICATION
+local function CreateNoti()
 
-local size = opened and (#options*28) or 0
+	local Noti = Instance.new("Frame",Holder)
+	Noti.Size = UDim2.new(1,0,0,45)
+	Noti.BackgroundColor3 = Theme.Button
+	Instance.new("UICorner",Noti)
 
-game:GetService("TweenService"):Create(container,
-TweenInfo.new(.25),
-{Size=UDim2.new(1,-10,0,size)}
-):Play()
+	local Label = Instance.new("TextLabel",Noti)
+	Label.Size = UDim2.new(1,-10,1,0)
+	Label.Position = UDim2.new(0,5,0,0)
+	Label.BackgroundTransparency = 1
+	Label.TextColor3 = Theme.Text
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.TextYAlignment = Enum.TextYAlignment.Top
+	Label.TextWrapped = true
+	Label.Text = "" -- à¹à¸à¹à¸à¸±à¸à¸«à¸² Label à¹à¸à¸¥à¹
 
+	return Label
+
+end
+
+-- CREATE 3 BOX
+local ServerNoti = CreateNoti()
+local PlayerNoti = CreateNoti()
+local MoveNoti = CreateNoti()
+
+-- SERVER HOP
+function Hop()
+
+	local req = game:HttpGet(
+		"https://games.roblox.com/v1/games/"..
+		PlaceID..
+		"/servers/Public?sortOrder=Asc&limit=100"
+	)
+
+	local data = HttpService:JSONDecode(req)
+
+	local serverCount = 0
+
+	for _,v in pairs(data.data) do
+
+		serverCount += 1
+
+		if v.playing < v.maxPlayers then
+
+			ServerNoti.Text = "à¸à¸³à¸à¸§à¸à¹à¸à¸´à¸à¸à¸µà¹à¸«à¸² : "..serverCount.." à¹à¸à¸´à¸"
+
+			local ping = v.ping or "?"
+
+			PlayerNoti.Text =
+				"à¸à¸¹à¹à¹à¸¥à¹à¸à¹à¸à¹à¸à¸´à¸ : "..v.playing.." à¸à¸\n"..
+				"à¸à¸´à¸ : "..ping.." ms"
+
+			for i=5,1,-1 do
+				MoveNoti.Text = "à¸à¸³à¸¥à¸±à¸à¸¢à¹à¸²à¸¢ à¹à¸à¸­à¸µà¸ "..i.." à¸§à¸´à¸à¸²à¸à¸µ"
+				task.wait(1)
+			end
+
+			TeleportService:TeleportToPlaceInstance(
+				PlaceID,
+				v.id,
+				Players.LocalPlayer
+			)
+
+			break
+
+		end
+
+	end
+
+end
+
+-- BUTTON
+Button("Hop Server",function()
+	Hop()
 end)
 
-------------------------------------------------
--- REFRESH FUNCTION
-------------------------------------------------
+-- TOGGLE
+Toggle("Hop low player",function(state)
 
-local dropdown={}
+	if state then
 
-function dropdown:Refresh(newList)
+		task.spawn(function()
 
-for _,v in pairs(options) do
-v:Destroy()
-end
+			while state do
+				Hop()
+				task.wait(20)
+			end
 
-options={}
+		end)
 
-for _,v in pairs(newList) do
-createOption(v)
-end
+	end
 
-end
-
-return dropdown
-
-end
+end)
