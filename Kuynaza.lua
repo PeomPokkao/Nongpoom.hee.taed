@@ -1,193 +1,220 @@
--- SERVICES
-local TweenService = game:GetService("TweenService")
-local TeleportService = game:GetService("TeleportService")
-local HttpService = game:GetService("HttpService")
+-- SMART CHEST FARM (NO ESP)
+
 local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
-local PlaceID = game.PlaceId
+local player = Players.LocalPlayer
 
--- GUI
-local ScreenGui = Instance.new("ScreenGui",game.CoreGui)
+local Farm = false
+local ChestCollected = 0
+local FODCollected = 0
 
--- THEME
-local Theme = {
-	Main = Color3.fromRGB(25,25,25),
-	Button = Color3.fromRGB(35,35,35),
-	Accent = Color3.fromRGB(0,170,255),
-	Text = Color3.fromRGB(255,255,255)
-}
+local FootPart
+local Tween
 
--- FLOAT ICON
-local Float = Instance.new("ImageButton",ScreenGui)
-Float.Size = UDim2.new(0,38,0,38)
-Float.Position = UDim2.new(0,20,0.5,-19)
-Float.BackgroundColor3 = Theme.Button
-Float.Image = "rbxassetid://7733960981"
-Instance.new("UICorner",Float).CornerRadius = UDim.new(1,0)
+-------------------------------------------------
+-- UI
+-------------------------------------------------
 
--- MAIN
-local Main = Instance.new("Frame",ScreenGui)
-Main.Size = UDim2.new(0,270,0,140)
-Main.Position = UDim2.new(0.5,-135,0.5,-70)
-Main.BackgroundColor3 = Theme.Main
-Main.BackgroundTransparency = 0.15
-Main.Visible = false
-Instance.new("UICorner",Main)
+local gui = Instance.new("ScreenGui",game.CoreGui)
 
-local Stroke = Instance.new("UIStroke",Main)
-Stroke.Color = Theme.Accent
+local open = Instance.new("TextButton",gui)
+open.Size = UDim2.new(0,50,0,50)
+open.Position = UDim2.new(0,20,0.5,-25)
+open.Text = "≡"
 
-Float.MouseButton1Click:Connect(function()
-	Main.Visible = not Main.Visible
+local frame = Instance.new("Frame",gui)
+frame.Size = UDim2.new(0,220,0,170)
+frame.Position = UDim2.new(0,80,0.5,-85)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.Visible = false
+
+open.MouseButton1Click:Connect(function()
+	frame.Visible = not frame.Visible
 end)
 
--- CONTENT
-local Content = Instance.new("Frame",Main)
-Content.Size = UDim2.new(1,0,1,0)
-Content.BackgroundTransparency = 1
+local farmBtn = Instance.new("TextButton",frame)
+farmBtn.Size = UDim2.new(1,-10,0,30)
+farmBtn.Position = UDim2.new(0,5,0,5)
+farmBtn.Text = "Chest Farm : OFF"
 
-local Layout = Instance.new("UIListLayout",Content)
-Layout.Padding = UDim.new(0,6)
+local chestLabel = Instance.new("TextLabel",frame)
+chestLabel.Size = UDim2.new(1,0,0,20)
+chestLabel.Position = UDim2.new(0,0,0,50)
+chestLabel.BackgroundTransparency = 1
+chestLabel.TextColor3 = Color3.new(1,1,1)
+chestLabel.Text = "Chest : 0"
 
--- BUTTON
-function Button(text,callback)
+local fodLabel = Instance.new("TextLabel",frame)
+fodLabel.Size = UDim2.new(1,0,0,20)
+fodLabel.Position = UDim2.new(0,0,0,75)
+fodLabel.BackgroundTransparency = 1
+fodLabel.TextColor3 = Color3.new(1,1,1)
+fodLabel.Text = "First Of Darkness : 0"
 
-	local Btn = Instance.new("TextButton",Content)
-	Btn.Size = UDim2.new(1,-16,0,28)
-	Btn.Position = UDim2.new(0,8,0,0)
-	Btn.Text = text
-	Btn.BackgroundColor3 = Theme.Button
-	Btn.TextColor3 = Theme.Text
-	Instance.new("UICorner",Btn)
+-------------------------------------------------
+-- FOOT PLATFORM
+-------------------------------------------------
 
-	Btn.MouseButton1Click:Connect(callback)
+local function CreateFoot()
 
-end
+	if FootPart then return end
 
--- TOGGLE
-function Toggle(text,callback)
+	local root = player.Character:WaitForChild("HumanoidRootPart")
 
-	local T = Instance.new("TextButton",Content)
-	T.Size = UDim2.new(1,-16,0,28)
-	T.Text = text.." : OFF"
-	T.BackgroundColor3 = Theme.Button
-	T.TextColor3 = Theme.Text
-	Instance.new("UICorner",T)
+	FootPart = Instance.new("Part")
+	FootPart.Size = Vector3.new(6,0.5,6)
+	FootPart.Material = Enum.Material.Neon
+	FootPart.CanCollide = false
+	FootPart.Parent = workspace
 
-	local state = false
+	RunService.RenderStepped:Connect(function()
 
-	T.MouseButton1Click:Connect(function()
-
-		state = not state
-		T.Text = text.." : "..(state and "ON" or "OFF")
-
-		callback(state)
+		if FootPart and root then
+			FootPart.CFrame = root.CFrame * CFrame.new(0,-3,0)
+			FootPart.Color = Color3.fromHSV(tick()%5/5,1,1)
+		end
 
 	end)
 
 end
 
--- NOTIFICATION HOLDER
-local Holder = Instance.new("Frame",ScreenGui)
-Holder.Position = UDim2.new(1,-260,0,80)
-Holder.Size = UDim2.new(0,240,0,200)
-Holder.BackgroundTransparency = 1
+local function RemoveFoot()
 
-local Layout2 = Instance.new("UIListLayout",Holder)
-Layout2.Padding = UDim.new(0,6)
-
--- CREATE NOTIFICATION
-local function CreateNoti()
-
-	local Noti = Instance.new("Frame",Holder)
-	Noti.Size = UDim2.new(1,0,0,45)
-	Noti.BackgroundColor3 = Theme.Button
-	Instance.new("UICorner",Noti)
-
-	local Label = Instance.new("TextLabel",Noti)
-	Label.Size = UDim2.new(1,-10,1,0)
-	Label.Position = UDim2.new(0,5,0,0)
-	Label.BackgroundTransparency = 1
-	Label.TextColor3 = Theme.Text
-	Label.TextXAlignment = Enum.TextXAlignment.Left
-	Label.TextYAlignment = Enum.TextYAlignment.Top
-	Label.TextWrapped = true
-	Label.Text = "" -- à¹à¸à¹à¸à¸±à¸à¸«à¸² Label à¹à¸à¸¥à¹
-
-	return Label
+	if FootPart then
+		FootPart:Destroy()
+		FootPart = nil
+	end
 
 end
 
--- CREATE 3 BOX
-local ServerNoti = CreateNoti()
-local PlayerNoti = CreateNoti()
-local MoveNoti = CreateNoti()
+-------------------------------------------------
+-- FIND CHESTS
+-------------------------------------------------
 
--- SERVER HOP
-function Hop()
+local function GetAllChests()
 
-	local req = game:HttpGet(
-		"https://games.roblox.com/v1/games/"..
-		PlaceID..
-		"/servers/Public?sortOrder=Asc&limit=100"
-	)
+	local list = {}
 
-	local data = HttpService:JSONDecode(req)
+	for _,v in pairs(workspace:GetDescendants()) do
 
-	local serverCount = 0
+		if v.Name:lower():find("chest") then
 
-	for _,v in pairs(data.data) do
+			local part = v:IsA("BasePart") and v or v:FindFirstChildWhichIsA("BasePart")
 
-		serverCount += 1
-
-		if v.playing < v.maxPlayers then
-
-			ServerNoti.Text = "à¸à¸³à¸à¸§à¸à¹à¸à¸´à¸à¸à¸µà¹à¸«à¸² : "..serverCount.." à¹à¸à¸´à¸"
-
-			local ping = v.ping or "?"
-
-			PlayerNoti.Text =
-				"à¸à¸¹à¹à¹à¸¥à¹à¸à¹à¸à¹à¸à¸´à¸ : "..v.playing.." à¸à¸\n"..
-				"à¸à¸´à¸ : "..ping.." ms"
-
-			for i=5,1,-1 do
-				MoveNoti.Text = "à¸à¸³à¸¥à¸±à¸à¸¢à¹à¸²à¸¢ à¹à¸à¸­à¸µà¸ "..i.." à¸§à¸´à¸à¸²à¸à¸µ"
-				task.wait(1)
+			if part then
+				table.insert(list,part)
 			end
 
-			TeleportService:TeleportToPlaceInstance(
-				PlaceID,
-				v.id,
-				Players.LocalPlayer
-			)
+		end
 
-			break
+	end
 
+	return list
+
+end
+
+-------------------------------------------------
+-- NEAREST CHEST
+-------------------------------------------------
+
+local function GetNearestChest()
+
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+
+	local nearest
+	local distance = math.huge
+
+	for _,chest in pairs(GetAllChests()) do
+
+		local dist = (root.Position - chest.Position).Magnitude
+
+		if dist < distance then
+			distance = dist
+			nearest = chest
+		end
+
+	end
+
+	return nearest
+
+end
+
+-------------------------------------------------
+-- FLY
+-------------------------------------------------
+
+local function FlyTo(chest)
+
+	local root = player.Character:FindFirstChild("HumanoidRootPart")
+
+	local dist = (root.Position - chest.Position).Magnitude
+
+	Tween = TweenService:Create(
+		root,
+		TweenInfo.new(dist/120,Enum.EasingStyle.Linear),
+		{CFrame = chest.CFrame + Vector3.new(0,3,0)}
+	)
+
+	Tween:Play()
+	Tween.Completed:Wait()
+
+	ChestCollected += 1
+	chestLabel.Text = "Chest : "..ChestCollected
+
+end
+
+-------------------------------------------------
+-- FIRST OF DARKNESS
+-------------------------------------------------
+
+player.Backpack.ChildAdded:Connect(function(item)
+
+	if item.Name:lower():find("darkness") then
+
+		FODCollected += 1
+		fodLabel.Text = "First Of Darkness : "..FODCollected
+
+	end
+
+end)
+
+-------------------------------------------------
+-- FARM LOOP
+-------------------------------------------------
+
+local function StartFarm()
+
+	while Farm do
+
+		local chest = GetNearestChest()
+
+		if chest then
+			FlyTo(chest)
+		else
+			task.wait(1)
 		end
 
 	end
 
 end
 
+-------------------------------------------------
 -- BUTTON
-Button("Hop Server",function()
-	Hop()
-end)
+-------------------------------------------------
 
--- TOGGLE
-Toggle("Hop low player",function(state)
+farmBtn.MouseButton1Click:Connect(function()
 
-	if state then
+	Farm = not Farm
+	farmBtn.Text = "Chest Farm : "..(Farm and "ON" or "OFF")
 
-		task.spawn(function()
-
-			while state do
-				Hop()
-				task.wait(20)
-			end
-
-		end)
-
+	if Farm then
+		CreateFoot()
+		task.spawn(StartFarm)
+	else
+		RemoveFoot()
 	end
 
 end)
